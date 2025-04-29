@@ -1,80 +1,49 @@
 import streamlit as st
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 
-# --- Streamlit UI Configuration ---
-st.set_page_config(page_title="NLLB Translator", page_icon="🌍", layout="centered")
+# Streamlit UI beállítások
+st.set_page_config(page_title="NLLB Fordító", page_icon="🌍", layout="centered")
+st.title("🌍 Meta NLLB Fordító (Magyar ↔ Angol)")
 
-# --- Language Selector ---
-lang = st.radio("Choose your language", ("Magyar", "English"))
+st.markdown("Ez az alkalmazás a Meta AI (Facebook) által készített NLLB modellt használja a fordításhoz – teljesen ingyenesen.")
 
-if lang == "Magyar":
-    title = "🌍 Meta NLLB Fordító (Magyar ↔ Angol)"
-    description = "Ez az alkalmazás a Meta AI (Facebook) által készített NLLB modellt használja a fordításhoz – teljesen ingyenesen."
-    lang_pair_text = "Válassz nyelvpárt:"
-    src_input_text = "Írd be a lefordítandó szöveget:"
-    button_text = "Fordítás"
-    success_text = "Fordítás kész!"
-    warning_text = "Kérlek, adj meg fordítandó szöveget."
-    model_name = "facebook/nllb-200-distilled-600M"
-    credits = """
-    📘 Modell: `facebook/nllb-200-distilled-600M` \n
-    🤖 Készült a Hugging Face Transformers könyvtárral \n
-    👨‍💻 Nyílt forráskódú, offline is futtatható (GPU ajánlott)
-    """
-    footer_text = "Készítette Szijártó Ferenc"
-else:
-    title = "🌍 Meta NLLB Translator (Hungarian ↔ English)"
-    description = "This app uses the Meta AI (Facebook) NLLB model for translation – completely free of charge."
-    lang_pair_text = "Choose language pair:"
-    src_input_text = "Enter text to be translated:"
-    button_text = "Translate"
-    success_text = "Translation complete!"
-    warning_text = "Please enter some text to translate."
-    model_name = "facebook/nllb-200-distilled-600M"
-    credits = """
-    📘 Model: `facebook/nllb-200-distilled-600M` \n
-    🤖 Built with the Hugging Face Transformers library \n
-    👨‍💻 Open-source, can be run offline (GPU recommended)
-    """
-    footer_text = "Created by Szijártó Ferenc"
-
-# --- Model and Tokenizer Loading ---
+# 💾 Modell betöltése Hugging Face-ről (egyszer letölti, cache-eli)
 @st.cache_resource
 def load_nllb_model():
+    model_name = "facebook/nllb-200-distilled-600M"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     return pipeline("translation", model=model, tokenizer=tokenizer)
 
 translator = load_nllb_model()
 
-# --- Language Pair Selection ---
+# Nyelvkódok
 LANGUAGES = {
     "Magyar → Angol": ("hun_Latn", "eng_Latn"),
     "Angol → Magyar": ("eng_Latn", "hun_Latn")
 }
 
-lang_pair = st.selectbox(lang_pair_text, list(LANGUAGES.keys()))
+# UI: nyelvpár választása
+lang_pair = st.selectbox("Válassz nyelvpárt:", list(LANGUAGES.keys()))
 src_lang, tgt_lang = LANGUAGES[lang_pair]
 
-# --- Text Input Area ---
-text_input = st.text_area(src_input_text, height=150)
+# UI: szövegbevitel
+text_input = st.text_area("Írd be a lefordítandó szöveget:", height=150)
 
-if st.button(button_text):
+if st.button("Fordítás"):
     if not text_input.strip():
-        st.warning(warning_text)
+        st.warning("Kérlek, adj meg fordítandó szöveget.")
     else:
-        with st.spinner("Translating..."):
+        with st.spinner("Fordítás folyamatban..."):
             result = translator(text_input, src_lang=src_lang, tgt_lang=tgt_lang)
             translated = result[0]["translation_text"]
-            st.success(success_text)
-            st.text_area("Translated text:", translated, height=150)
+            st.success("Fordítás kész!")
+            st.text_area("Fordított szöveg:", translated, height=150)
 
-# --- Custom Footer with Styling ---
+# Lábjegyzet
 st.markdown("---")
-st.markdown(
-    credits,
-    unsafe_allow_html=True,
-)
+st.markdown("Készítette **Szijártó Ferenc** • Modell: `facebook/nllb-200-distilled-600M` • Hugging Face + Streamlit")
+
 st.markdown(
     f'<p style="text-align:center; color:#888;">{footer_text}</p>', unsafe_allow_html=True
 )
